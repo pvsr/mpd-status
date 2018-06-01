@@ -11,63 +11,64 @@ import qualified Data.ByteString as B (ByteString, putStr, pack)
 import Data.ByteString.Char8 (readInt)
 import Data.ByteString.Lazy (toStrict)
 import Network.MPD
+import Network.MPD.Commands.Extensions
 import qualified Text.Show.ByteString as B (show)
+
+data Operation = Toggle
+               | Stop
+               | VolumeUp
+               | VolumeDown
+               | Mute
+               | Previous
+               | Next
+               | AllRandom
+               | None
+
+buttonMap :: Maybe Int -> Operation
+-- left button
+buttonMap (Just 1) = Toggle
+-- middle button
+buttonMap (Just 2) = AllRandom
+-- right button
+buttonMap (Just 3) = Stop
+-- scroll up
+buttonMap (Just 4) = VolumeUp
+-- scroll down
+buttonMap (Just 5) = VolumeDown
+-- back button
+buttonMap (Just 8) = Previous
+-- forward button
+buttonMap (Just 9) = Next
+buttonMap _ = None
+
+volStep = 5
+
+op :: Operation -> MPD ()
+op Toggle = toggle
+op AllRandom = clear >> add "" >> random True >> play Nothing
+op Stop = stop
+op VolumeUp = status >>= maybe (return ()) (setVolume . inc volStep) . stVolume
+op VolumeDown = status >>= maybe (return ()) (setVolume . dec volStep) . stVolume
+-- TODO it would be nice to be able to toggle mute. is that info stored?
+op Mute = setVolume 0
+op Previous = previous
+op Next = next
+op None = return ()
 
 main :: IO ()
 main = do
-  out <- withMPD main'
+  env <- getEnv "BLOCK_BUTTON"
+  let operation = buttonMap . fmap fst $ readInt =<< env
+  out <- withMPD $ do
+    op operation
+    maybe "mpd stopped" . mappend <$> extractSong <*> statusInfo
   case out of
     (Left msg) -> print msg
     (Right l) -> B.putStr l
 
-main' :: MPD B.ByteString
-main' = do
-  initStatus <- status
-  let initState = stState initStatus
-  let initVol = stVolume initStatus
-  button <- liftIO $ getEnv "BLOCK_BUTTON"
-  (curState, curVol) <-
-    case button of
-      (Just env) -> do
-        let cmd = readInt env
-        op (fmap fst cmd) initState initVol
-      Nothing -> return (initState, initVol)
-  song <- currentSong
-  let statusString = info curState curVol
-  return $ maybe "mpd stopped" (extract song <>) statusString
-
-op :: Maybe Int -> State -> Maybe Int -> MPD (State, Maybe Int)
-op Nothing s v = return (s, v)
-op (Just cmd) state vol =
-  case cmd of
-    -- left button
-    1 ->
-      case state of
-        Playing -> pause True >> return (Paused, vol)
-        Paused -> pause False >> return (Playing, vol)
-        Stopped -> play Nothing >> return (Playing, vol)
-    -- middle button
-    2 -> clear >> add "" >> random True >> play Nothing >> return (Playing, vol)
-    -- right button
-    3 -> stop >> return (Stopped, vol)
-    -- scroll up
-    4 -> setVolume' inc
-    -- scroll down
-    5 -> setVolume' dec
-    -- left button
-    8 -> previous >> return (Playing, vol)
-    -- right button
-    9 -> next >> return (Playing, vol)
-    _ -> noChange
-  where
-    noChange = return (state, vol)
-    setVolume' f =
-      case vol of
-        Just v -> setVolume (f v) >> return (state, Just $ f v)
-        Nothing -> noChange
-
-info :: State -> Maybe Int -> Maybe B.ByteString
-info state vol =
+statusInfo :: MPD (Maybe B.ByteString)
+statusInfo = fmap statusInfo' status
+statusInfo' Status { stState = state, stVolume = vol } =
   case (state, vol) of
     (Stopped, _) -> Nothing
     (Playing, Nothing) -> Just ""
@@ -84,28 +85,29 @@ info state vol =
       | v > 0 = B.pack [0xef, 0x80, 0xa7]
       | otherwise = B.pack [0xef, 0x80, 0xa6]
 
-extract :: Maybe Song -> B.ByteString
-extract song =
+extractSong :: MPD B.ByteString
+extractSong = fmap extractSong' currentSong
+extractSong' song =
   fromMaybe "no song" $
   do tags <- sgTags <$> song
      if null tags
        then fmap (toStrict . encode . toString . sgFilePath) song
        else do
-         title <- extract' =<< M.lookup Title tags
-         artist <- extract' =<< M.lookup Artist tags
+         title <- extract =<< M.lookup Title tags
+         artist <- extract =<< M.lookup Artist tags
          return $ artist <> " - " <> title
   where
-    extract' :: [Value] -> Maybe B.ByteString
-    extract' [] = Nothing
-    extract' (b:_) = Just $ toUtf8 b
+    extract :: [Value] -> Maybe B.ByteString
+    extract [] = Nothing
+    extract (b:_) = Just $ toUtf8 b
 
-inc :: Int -> Int
-inc volume = min 100 $ (volume `div` 5 + 1) * 5
+inc :: Int -> Int -> Int
+inc step volume = min 100 $ (volume `div` step + 1) * step
 
-dec :: Int -> Int
-dec volume = max 0 (base5 `div` 5) * 5
+dec :: Int -> Int -> Int
+dec step volume = max 0 (baseN `div` step) * step
   where
-    base5 =
-      if volume `mod` 5 == 0
+    baseN =
+      if volume `mod` step == 0
         then volume - 1
         else volume
