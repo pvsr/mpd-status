@@ -40,16 +40,23 @@ op :: Maybe Int -> State -> Maybe Int -> MPD (State, Maybe Int)
 op Nothing s v = return (s, v)
 op (Just cmd) state vol =
   case cmd of
+    -- left button
     1 ->
       case state of
         Playing -> pause True >> return (Paused, vol)
         Paused -> pause False >> return (Playing, vol)
         Stopped -> play Nothing >> return (Playing, vol)
+    -- middle button
     2 -> clear >> add "" >> random True >> play Nothing >> return (Playing, vol)
+    -- right button
     3 -> stop >> return (Stopped, vol)
+    -- scroll up
     4 -> setVolume' inc
+    -- scroll down
     5 -> setVolume' dec
+    -- left button
     8 -> previous >> return (Playing, vol)
+    -- right button
     9 -> next >> return (Playing, vol)
     _ -> noChange
   where
@@ -63,11 +70,12 @@ info :: State -> Maybe Int -> Maybe B.ByteString
 info state vol =
   case (state, vol) of
     (Stopped, _) -> Nothing
+    (Playing, Nothing) -> Just ""
     (Playing, Just 100) -> Just ""
     (Playing, Just v) -> Just $ " [" <> volIndicator v <> "%]"
+    (Paused, Nothing) -> Just " [paused]"
     (Paused, Just 100) -> Just " [paused]"
     (Paused, Just v) -> Just $ " [paused | " <> volIndicator v <> "%]"
-    (_, Nothing) -> Just ""
   where
     volIndicator v = symbol v <> " " <> toStrict (B.show v)
     -- There's probably a more convenient way to represent UTF-8 literals...
