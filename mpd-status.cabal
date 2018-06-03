@@ -1,0 +1,31 @@
+name:                mpd-status
+version:             0.1.0.0
+
+synopsis:            A nice-looking statusline for MPD.
+description:         A interactive MPD status block for use with i3blocks.
+
+license:             PublicDomain
+author:              Peter Rice
+maintainer:          peter@peterrice.xyz
+
+category:            Sound
+build-type:          Simple
+
+extra-source-files:  ChangeLog.md
+source-repository head
+    type:       git
+    location:   https://github.com/pvsr/mpd-status
+
+cabal-version:       >=1.10
+
+executable mpd-status
+  main-is:             mpd-status.hs
+
+  build-depends:       base >=4.11 && <4.12
+                     , binary >=0.8 && <0.10
+                     , bytestring >=0.10 && <0.11
+                     , bytestring-show >=0.3 && <0.4
+                     , containers >=0.5 && <0.6
+                     , libmpd >=0.9 && <0.10
+                     , unix >=2.7 && <3
+  default-language:    Haskell2010
