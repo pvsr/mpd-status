@@ -43,6 +43,7 @@ buttonMap (Just 8) = Previous
 buttonMap (Just 9) = Next
 buttonMap _ = None
 
+volStep :: Int
 volStep = 5
 
 op :: Operation -> MPD ()
@@ -85,46 +86,43 @@ block = maybe "mpd stopped" . mappend <$> extractSong <*> statusInfo
 
 statusInfo :: MPD (Maybe B.ByteString)
 statusInfo = fmap statusInfo' status
-statusInfo' Status { stState = state, stVolume = vol } =
-  case (state, vol) of
-    (Stopped, _) -> Nothing
-    (Playing, Nothing) -> Just ""
-    (Playing, Just 100) -> Just ""
-    (Playing, Just v) -> Just $ " [" <> volIndicator v <> "%]"
-    (Paused, Nothing) -> Just " [paused]"
-    (Paused, Just 100) -> Just " [paused]"
-    (Paused, Just v) -> Just $ " [paused | " <> volIndicator v <> "%]"
-  where
-    volIndicator v = symbol v <> " " <> toStrict (B.show v)
-    -- There's probably a more convenient way to represent UTF-8 literals...
-    symbol v
-      | v > 49 = B.pack [0xef, 0x80, 0xa8]
-      | v > 0 = B.pack [0xef, 0x80, 0xa7]
-      | otherwise = B.pack [0xef, 0x80, 0xa6]
+  where statusInfo' Status { stState = state, stVolume = vol } =
+          case (state, vol) of
+            (Stopped, _) -> Nothing
+            (Playing, Nothing) -> Just ""
+            (Playing, Just 100) -> Just ""
+            (Playing, Just v) -> Just $ " [" <> volIndicator v <> "%]"
+            (Paused, Nothing) -> Just " [paused]"
+            (Paused, Just 100) -> Just " [paused]"
+            (Paused, Just v) -> Just $ " [paused | " <> volIndicator v <> "%]"
+          where
+            volIndicator v = symbol v <> " " <> toStrict (B.show v)
+            -- There's probably a more convenient way to represent UTF-8 literals...
+            symbol v
+              | v > 49 = B.pack [0xef, 0x80, 0xa8]
+              | v > 0 = B.pack [0xef, 0x80, 0xa7]
+              | otherwise = B.pack [0xef, 0x80, 0xa6]
 
 extractSong :: MPD B.ByteString
 extractSong = fmap extractSong' currentSong
-extractSong' song =
-  fromMaybe "no song" $
-  do tags <- sgTags <$> song
-     if null tags
-       then fmap (toStrict . encode . toString . sgFilePath) song
-       else do
-         title <- extract =<< M.lookup Title tags
-         artist <- extract =<< M.lookup Artist tags
-         return $ artist <> " - " <> title
-  where
-    extract :: [Value] -> Maybe B.ByteString
-    extract [] = Nothing
-    extract (b:_) = Just $ toUtf8 b
+  where extractSong' song =
+          fromMaybe "no song" $
+          do tags <- sgTags <$> song
+             if null tags
+               then fmap (toStrict . encode . toString . sgFilePath) song
+               else do
+                 title <- extract =<< M.lookup Title tags
+                 artist <- extract =<< M.lookup Artist tags
+                 return $ artist <> " - " <> title
+        extract [] = Nothing
+        extract (b:_) = Just $ toUtf8 b
 
 inc :: Int -> Int -> Int
-inc step volume = min 100 $ (volume `div` step + 1) * step
+inc step vol = min 100 $ (vol `div` step + 1) * step
 
 dec :: Int -> Int -> Int
-dec step volume = max 0 (baseN `div` step) * step
+dec step vol = max 0 (baseN `div` step) * step
   where
-    baseN =
-      if volume `mod` step == 0
-        then volume - 1
-        else volume
+    baseN = if vol `mod` step == 0
+               then vol - 1
+               else vol

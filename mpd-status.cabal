@@ -20,6 +20,7 @@ source-repository head
     location:   https://github.com/pvsr/mpd-status
 
 executable mpd-status
+  ghc-options:         -Wall
   main-is:             mpd-status.hs
   other-modules:       Button
 
