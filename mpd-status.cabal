@@ -21,7 +21,7 @@ source-repository head
 
 executable mpd-status
   ghc-options:         -Wall
-  main-is:             mpd-status.hs
+  main-is:             Status.hs
   other-modules:       Button
 
   build-depends:       base >=4.11 && <4.12
