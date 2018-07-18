@@ -22,8 +22,8 @@ source-repository head
 executable mpd-status
   ghc-options:         -Wall
   main-is:             Status.hs
-  other-modules:       Config
-                       Button
+  other-modules:       Click
+                       Config
                        Operation
 
   build-depends:       base >=4.11 && <4.12
