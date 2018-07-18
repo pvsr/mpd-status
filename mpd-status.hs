@@ -62,11 +62,10 @@ main = do
   hSetBuffering stdout LineBuffering
   sequence_ . Prelude.repeat $ do
     run block
-    tid <- forkIO $ do
-      sequence_ . Prelude.repeat . run $ idle [PlayerS] >> block
+    tid <- forkIO . sequence_ . Prelude.repeat . run $ idle [PlayerS] >> block
     json <- B.getLine
     killThread tid
-    withMPD . op . buttonMap . (fmap button) $ decodeStrict json
+    withMPD . op . buttonMap . fmap button $ decodeStrict json
 
 
 run :: MPD T.Text -> IO ()
@@ -91,7 +90,7 @@ statusInfo = fmap statusInfo' status
             (Paused, Just 100) -> Just " [paused]"
             (Paused, Just v) -> Just $ " [paused | " <> volIndicator v <> "%]"
           where
-            volIndicator v = symbol v <> " " <> (T.pack $ show v)
+            volIndicator v = symbol v <> " " <> T.pack (show v)
             symbol v
               | v > 49 = "\xf028"
               | v > 0 = "\xf027"
