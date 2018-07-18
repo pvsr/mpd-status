@@ -1,6 +1,6 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Control.Concurrent
+import Control.Concurrent (forkIO, killThread)
 import qualified Data.Map as M (lookup)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
@@ -8,7 +8,7 @@ import System.IO (stdout, hSetBuffering, BufferMode(LineBuffering))
 
 import Data.Aeson (decodeStrict)
 import qualified Data.ByteString as B (getLine)
-import qualified Data.Text as T
+import qualified Data.Text as T (Text, pack)
 import qualified Data.Text.IO as T (putStrLn)
 import Network.MPD
 import Network.MPD.Commands.Extensions

@@ -3,7 +3,7 @@
 
 module Button (Button(..)) where
 
-import GHC.Generics
+import GHC.Generics (Generic)
 
 import Data.Aeson
 import Data.Text (Text)
