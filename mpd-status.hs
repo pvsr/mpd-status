@@ -1,18 +1,20 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Control.Monad.IO.Class (liftIO)
+import Control.Concurrent
 import qualified Data.Map as M (lookup)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
-import System.Posix.Env.ByteString (getEnv)
+import System.IO (stdout, hSetBuffering, BufferMode(LineBuffering))
 
+import Data.Aeson (decodeStrict)
 import Data.Binary (encode)
-import qualified Data.ByteString as B (ByteString, putStr, pack)
-import Data.ByteString.Char8 (readInt)
+import qualified Data.ByteString as B (ByteString, putStrLn, getLine, pack)
 import Data.ByteString.Lazy (toStrict)
 import Network.MPD
 import Network.MPD.Commands.Extensions
 import qualified Text.Show.ByteString as B (show)
+
+import Button (button)
 
 data Operation = Toggle
                | Stop
@@ -57,14 +59,29 @@ op None = return ()
 
 main :: IO ()
 main = do
-  env <- getEnv "BLOCK_BUTTON"
-  let operation = buttonMap . fmap fst $ readInt =<< env
-  out <- withMPD $ do
-    op operation
-    maybe "mpd stopped" . mappend <$> extractSong <*> statusInfo
+  hSetBuffering stdout LineBuffering
+  sequence_ . Prelude.repeat $ do
+    run block
+    tid <- forkIO $ do
+      sequence_ . Prelude.repeat . run $ idle [PlayerS] >> block
+    msg <- B.getLine
+    killThread tid
+    print msg
+    let raw = decodeStrict msg
+    print raw
+    let b = fmap button raw
+    withMPD . op $ buttonMap b
+
+
+run :: MPD B.ByteString -> IO ()
+run m = do
+  out <- withMPD m
   case out of
     (Left msg) -> print msg
-    (Right l) -> B.putStr l
+    (Right l) -> B.putStrLn l
+
+block :: MPD B.ByteString
+block = maybe "mpd stopped" . mappend <$> extractSong <*> statusInfo
 
 statusInfo :: MPD (Maybe B.ByteString)
 statusInfo = fmap statusInfo' status
