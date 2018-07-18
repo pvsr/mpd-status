@@ -7,12 +7,11 @@ import Data.Monoid ((<>))
 import System.IO (stdout, hSetBuffering, BufferMode(LineBuffering))
 
 import Data.Aeson (decodeStrict)
-import Data.Binary (encode)
-import qualified Data.ByteString as B (ByteString, putStrLn, getLine, pack)
-import Data.ByteString.Lazy (toStrict)
+import qualified Data.ByteString as B (getLine)
+import qualified Data.Text as T
+import qualified Data.Text.IO as T (putStrLn)
 import Network.MPD
 import Network.MPD.Commands.Extensions
-import qualified Text.Show.ByteString as B (show)
 
 import Button (button)
 
@@ -65,26 +64,22 @@ main = do
     run block
     tid <- forkIO $ do
       sequence_ . Prelude.repeat . run $ idle [PlayerS] >> block
-    msg <- B.getLine
+    json <- B.getLine
     killThread tid
-    print msg
-    let raw = decodeStrict msg
-    print raw
-    let b = fmap button raw
-    withMPD . op $ buttonMap b
+    withMPD . op . buttonMap . (fmap button) $ decodeStrict json
 
 
-run :: MPD B.ByteString -> IO ()
+run :: MPD T.Text -> IO ()
 run m = do
   out <- withMPD m
   case out of
     (Left msg) -> print msg
-    (Right l) -> B.putStrLn l
+    (Right l) -> T.putStrLn l
 
-block :: MPD B.ByteString
+block :: MPD T.Text
 block = maybe "mpd stopped" . mappend <$> extractSong <*> statusInfo
 
-statusInfo :: MPD (Maybe B.ByteString)
+statusInfo :: MPD (Maybe T.Text)
 statusInfo = fmap statusInfo' status
   where statusInfo' Status { stState = state, stVolume = vol } =
           case (state, vol) of
@@ -96,26 +91,25 @@ statusInfo = fmap statusInfo' status
             (Paused, Just 100) -> Just " [paused]"
             (Paused, Just v) -> Just $ " [paused | " <> volIndicator v <> "%]"
           where
-            volIndicator v = symbol v <> " " <> toStrict (B.show v)
-            -- There's probably a more convenient way to represent UTF-8 literals...
+            volIndicator v = symbol v <> " " <> (T.pack $ show v)
             symbol v
-              | v > 49 = B.pack [0xef, 0x80, 0xa8]
-              | v > 0 = B.pack [0xef, 0x80, 0xa7]
-              | otherwise = B.pack [0xef, 0x80, 0xa6]
+              | v > 49 = "\xf028"
+              | v > 0 = "\xf027"
+              | otherwise = "\xf026"
 
-extractSong :: MPD B.ByteString
+extractSong :: MPD T.Text
 extractSong = fmap extractSong' currentSong
   where extractSong' song =
           fromMaybe "no song" $
           do tags <- sgTags <$> song
              if null tags
-               then fmap (toStrict . encode . toString . sgFilePath) song
+               then fmap (toText . sgFilePath) song
                else do
                  title <- extract =<< M.lookup Title tags
                  artist <- extract =<< M.lookup Artist tags
                  return $ artist <> " - " <> title
         extract [] = Nothing
-        extract (b:_) = Just $ toUtf8 b
+        extract (b:_) = Just $ toText b
 
 inc :: Int -> Int -> Int
 inc step vol = min 100 $ (vol `div` step + 1) * step

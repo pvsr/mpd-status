@@ -6,10 +6,11 @@ module Button (Button(..)) where
 import GHC.Generics
 
 import Data.Aeson
+import Data.Text (Text)
 
 data Button = Button {
-      name :: String
-    , inst :: String
+      name :: Text
+    , inst :: Text
     , button :: Int
     , x :: Int
     , y :: Int
