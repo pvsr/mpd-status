@@ -11,51 +11,10 @@ import qualified Data.ByteString as B (getLine)
 import qualified Data.Text as T (Text, pack)
 import qualified Data.Text.IO as T (putStrLn)
 import Network.MPD
-import Network.MPD.Commands.Extensions
 
-import Button (button)
-
-data Operation = Toggle
-               | Stop
-               | VolumeUp
-               | VolumeDown
-               | Mute
-               | Previous
-               | Next
-               | AllRandom
-               | None
-
-buttonMap :: Maybe Int -> Operation
--- left button
-buttonMap (Just 1) = Toggle
--- middle button
-buttonMap (Just 2) = AllRandom
--- right button
-buttonMap (Just 3) = Stop
--- scroll up
-buttonMap (Just 4) = VolumeUp
--- scroll down
-buttonMap (Just 5) = VolumeDown
--- back button
-buttonMap (Just 8) = Previous
--- forward button
-buttonMap (Just 9) = Next
-buttonMap _ = None
-
-volStep :: Int
-volStep = 5
-
-op :: Operation -> MPD ()
-op Toggle = toggle
-op AllRandom = clear >> add "" >> random True >> play Nothing
-op Stop = stop
-op VolumeUp = status >>= maybe (return ()) (setVolume . inc volStep) . stVolume
-op VolumeDown = status >>= maybe (return ()) (setVolume . dec volStep) . stVolume
--- TODO it would be nice to be able to toggle mute. is that info stored?
-op Mute = setVolume 0
-op Previous = previous
-op Next = next
-op None = return ()
+import Click
+import Config
+import Operation
 
 main :: IO ()
 main = do
@@ -65,7 +24,7 @@ main = do
     tid <- forkIO . sequence_ . Prelude.repeat . run $ idle [PlayerS] >> block
     json <- B.getLine
     killThread tid
-    withMPD . op . buttonMap . fmap button $ decodeStrict json
+    withMPD . op $ (button <$> decodeStrict json) >>= buttonFromId >>= buttonToOp
 
 
 run :: MPD T.Text -> IO ()
@@ -109,13 +68,3 @@ extractSong = fmap extractSong' currentSong
                  return $ artist <> " - " <> title
         extract [] = Nothing
         extract (b:_) = Just $ toText b
-
-inc :: Int -> Int -> Int
-inc step vol = min 100 $ (vol `div` step + 1) * step
-
-dec :: Int -> Int -> Int
-dec step vol = max 0 (baseN `div` step) * step
-  where
-    baseN = if vol `mod` step == 0
-               then vol - 1
-               else vol
