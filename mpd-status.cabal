@@ -20,6 +20,8 @@ source-repository head
     location:   https://github.com/pvsr/mpd-status
 
 executable mpd-status
+  default-extensions:  OverloadedStrings
+  other-extensions:    LambdaCase
   ghc-options:         -Wall
   main-is:             Status.hs
   other-modules:       Click

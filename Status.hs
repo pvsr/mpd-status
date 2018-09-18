@@ -1,6 +1,7 @@
 {-# LANGUAGE OverloadedStrings #-}
 
 import Control.Concurrent (forkIO, killThread)
+import Control.Monad (forever, (>=>))
 import qualified Data.Map as M (lookup)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
@@ -12,28 +13,25 @@ import qualified Data.Text as T (Text, pack)
 import qualified Data.Text.IO as T (putStrLn)
 import Network.MPD
 
-import Click
 import Config
 import Operation
 
 main :: IO ()
 main = do
   hSetBuffering stdout LineBuffering
-  sequence_ . Prelude.repeat $ do
+  forever $ do
     run block
-    tid <- forkIO . sequence_ . Prelude.repeat . run $ idle [PlayerS] >> block
-    json <- B.getLine
+    tid <- forkIO . forever . run $ idle [PlayerS] >> block
+    b <- decodeStrict <$> B.getLine
     killThread tid
-    withMPD . op $ (button <$> decodeStrict json) >>= buttonFromId >>= buttonToOp
-
+    withMPD . maybe (return ()) op $ b >>= buttonToOp
 
 run :: MPD T.Text -> IO ()
-run m = do
-  out <- withMPD m
-  case out of
-    (Left msg) -> print msg
-    (Right l) -> T.putStrLn l
+run = withMPD >=> either print T.putStrLn
 
+-- TODO color
+-- colors set in i3blocks config are available in environment
+-- with markup=pango: "<span color=\"#ff0000\">mpd stopped</span>"
 block :: MPD T.Text
 block = maybe "mpd stopped" . mappend <$> extractSong <*> statusInfo
 
@@ -58,13 +56,12 @@ statusInfo = fmap statusInfo' status
 extractSong :: MPD T.Text
 extractSong = fmap extractSong' currentSong
   where extractSong' song =
-          fromMaybe "no song" $
-          do tags <- sgTags <$> song
-             if null tags
-               then fmap (toText . sgFilePath) song
-               else do
-                 title <- extract =<< M.lookup Title tags
-                 artist <- extract =<< M.lookup Artist tags
-                 return $ artist <> " - " <> title
+          fromMaybe "no song" $ do
+            tags <- sgTags <$> song
+            path <- fmap (toText . sgFilePath) song
+            return . fromMaybe path $ do
+              title <- extract =<< M.lookup Title tags
+              artist <- extract =<< M.lookup Artist tags
+              return $ artist <> " - " <> title
         extract [] = Nothing
         extract (b:_) = Just $ toText b

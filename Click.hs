@@ -1,12 +1,9 @@
-{-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Click (Button(..), Click(..), buttonFromId) where
-
-import GHC.Generics (Generic)
+module Click (Button(..)) where
 
 import Data.Aeson
-import Data.Text (Text)
 
 data Button = LeftClick
             | MiddleClick
@@ -17,35 +14,17 @@ data Button = LeftClick
             | ScrollRight
             | Back
             | Forward
-            | None
+            deriving (Show)
 
-buttonFromId :: Int -> Maybe Button
-buttonFromId 1 = Just LeftClick
-buttonFromId 2 = Just MiddleClick
-buttonFromId 3 = Just RightClick
-buttonFromId 4 = Just ScrollUp
-buttonFromId 5 = Just ScrollDown
-buttonFromId 6 = Just ScrollLeft
-buttonFromId 7 = Just ScrollRight
-buttonFromId 8 = Just Back
-buttonFromId 9 = Just Forward
-buttonFromId _ = Nothing
-
-data Click = Click {
-      name :: Text
-    , inst :: Text
-    , button :: Int
-    , x :: Int
-    , y :: Int
-    } deriving (Generic, Show)
-
-instance ToJSON Click where
-  toEncoding = genericToEncoding defaultOptions
-
-instance FromJSON Click where
-  parseJSON = withObject "Click" $ \v -> Click
-      <$> v .: "name"
-      <*> v .: "instance"
-      <*> v .: "button"
-      <*> v .: "x"
-      <*> v .: "y"
+instance FromJSON Button where
+  parseJSON = withScientific "Button" $ \case
+      1 -> pure LeftClick
+      2 -> pure MiddleClick
+      3 -> pure RightClick
+      4 -> pure ScrollUp
+      5 -> pure ScrollDown
+      6 -> pure ScrollLeft
+      7 -> pure ScrollRight
+      8 -> pure Back
+      9 -> pure Forward
+      _ -> fail "expected an integer in [1, 9]"
