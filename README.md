@@ -23,3 +23,16 @@ but as far as I know this is the first!
 	* Most i3blocks scripts are just that—scripts—and are easy to just download
 		and run. That's not exactly a strong suit of Haskell's, partially thanks to:
 	* So many dependencies
+
+# Installation
+You'll need `cabal-install`.
+```bash
+$ git clone https://github.com/pvsr/mpd-status
+$ cd mpd-status
+$ cabal install
+```
+Then add `~/.cabal/bin/` to your `PATH`, et voilà.
+
+If you're on Arch Linux, then
+[good luck](https://wiki.archlinux.org/index.php/Haskell#Problems_with_linking).
+I'm an Arch user but I couldn't tell you how I got a working build.
