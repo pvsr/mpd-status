@@ -6,8 +6,11 @@ import qualified Data.Map as M
 import Data.Maybe (mapMaybe)
 import Data.List (nub)
 
+import Control.Monad.Trans (liftIO)
 import Network.MPD
 import Network.MPD.Commands.Extensions
+
+import Shuffle
 
 data Operation = Toggle
                | Stop
@@ -29,8 +32,8 @@ op (VolumeDown volStep) = status >>= maybe (return ()) (setVolume . dec volStep)
 op Mute = setVolume 0
 op Previous = previous
 op Next = next
-op AlbumShuffle = clear >> consume True >> random False >> listPlaylistInfo "album-shuffle" >>= mapM_ findAdd . (queries . uniqAlbums) >> play Nothing
-  -- TODO shuffle the results of uniqAlbums
+-- really pining for the elegance of `mpc playlist -f %album% album-shuffle | uniq | sort -R` here
+op AlbumShuffle = clear >> consume True >> random False >> listPlaylistInfo "album-shuffle" >>= (liftIO . Shuffle.shuffle . (queries . uniqAlbums)) >>= mapM_ findAdd >> play Nothing
   where uniqAlbums = nub . concat . mapMaybe (M.lookup Album . sgTags)
         queries = map (Album =?)
 
