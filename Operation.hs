@@ -38,7 +38,7 @@ op Next = next
 op PreviousAlbum = previous
 op NextAlbum = nextAlbum
 -- really pining for the elegance of `mpc playlist -f %album% album-shuffle | uniq | sort -R` here
-op AlbumShuffle = clear >> consume True >> random False >> listPlaylistInfo "album-shuffle" >>= (liftIO . Shuffle.shuffle . (queries . uniqAlbums)) >>= mapM_ findAdd >> play Nothing
+op AlbumShuffle = clear >> random False >> listPlaylistInfo "album-shuffle" >>= (liftIO . Shuffle.shuffle . (queries . uniqAlbums)) >>= mapM_ findAdd >> play Nothing
   where uniqAlbums = L.nub . concat . mapMaybe (M.lookup Album . sgTags)
         queries = map (Album =?)
 
