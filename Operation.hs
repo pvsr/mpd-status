@@ -2,9 +2,10 @@
 
 module Operation(Operation(..), op) where
 
+import Control.Monad (when)
 import qualified Data.Map as M
-import Data.Maybe (mapMaybe)
-import Data.List (nub)
+import Data.Maybe (fromJust, isJust, mapMaybe)
+import qualified Data.List as L (find, nub)
 
 import Control.Monad.Trans (liftIO)
 import Network.MPD
@@ -18,7 +19,9 @@ data Operation = Toggle
                | VolumeDown Int
                | Mute
                | Previous
+               | PreviousAlbum
                | Next
+               | NextAlbum
                | AllRandom
                | AlbumShuffle
 
@@ -32,10 +35,24 @@ op (VolumeDown volStep) = status >>= maybe (return ()) (setVolume . dec volStep)
 op Mute = setVolume 0
 op Previous = previous
 op Next = next
+op PreviousAlbum = previous
+op NextAlbum = nextAlbum
 -- really pining for the elegance of `mpc playlist -f %album% album-shuffle | uniq | sort -R` here
 op AlbumShuffle = clear >> consume True >> random False >> listPlaylistInfo "album-shuffle" >>= (liftIO . Shuffle.shuffle . (queries . uniqAlbums)) >>= mapM_ findAdd >> play Nothing
-  where uniqAlbums = nub . concat . mapMaybe (M.lookup Album . sgTags)
+  where uniqAlbums = L.nub . concat . mapMaybe (M.lookup Album . sgTags)
         queries = map (Album =?)
+
+nextAlbum :: MPD ()
+nextAlbum = let album = M.lookup Album . sgTags in do
+  st <- status
+  let position = stSongPos st
+  when (isJust position) $ do
+    let plLength = stPlaylistLength st
+    pl <- playlistInfoRange $ Just (fromJust position, fromInteger plLength)
+    -- TODO not safe
+    let current = head pl
+    let target = L.find (\song -> album song /= album current) pl
+    play $ target >>= sgIndex
 
 inc :: Int -> Int -> Int
 inc step vol = min 100 $ (vol `div` step + 1) * step
