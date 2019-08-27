@@ -23,7 +23,7 @@ data Operation = Toggle
                | Next
                | NextAlbum
                | AllRandom
-               | AlbumShuffle
+               | AlbumShuffle (Maybe PlaylistName)
 
 op :: Operation -> MPD ()
 op Toggle = toggle
@@ -37,8 +37,15 @@ op Previous = previous
 op Next = next
 op PreviousAlbum = previous
 op NextAlbum = nextAlbum
+-- TODO handle bad playlist argument
+op (AlbumShuffle (Just pl)) = listPlaylistInfo pl >>= albumShuffle
+op (AlbumShuffle Nothing) = (filterSongs <$> listAllInfo "") >>= albumShuffle
+  where filterSongs :: [LsResult] -> [Song]
+        filterSongs ls = [song | (LsSong song) <- ls]
+
 -- really pining for the elegance of `mpc playlist -f %album% album-shuffle | uniq | sort -R` here
-op AlbumShuffle = clear >> random False >> listPlaylistInfo "album-shuffle" >>= (liftIO . Shuffle.shuffle . (queries . uniqAlbums)) >>= mapM_ findAdd >> play Nothing
+albumShuffle :: [Song] -> MPD ()
+albumShuffle songs = clear >> random False >> (liftIO . Shuffle.shuffle . queries $ uniqAlbums songs) >>= mapM_ findAdd >> play Nothing
   where uniqAlbums = L.nub . concat . mapMaybe (M.lookup Album . sgTags)
         queries = map (Album =?)
 
