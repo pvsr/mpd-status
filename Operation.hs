@@ -58,8 +58,10 @@ nextAlbum = let album = M.lookup Album . sgTags in do
     pl <- playlistInfoRange $ Just (fromJust position, fromInteger plLength)
     -- TODO not safe
     let current = head pl
-    let target = L.find (\song -> album song /= album current) pl
-    play $ target >>= sgIndex
+    let index = L.find (\song -> album song /= album current) pl >>= sgIndex
+    if isJust index
+       then play index
+       else next
 
 inc :: Int -> Int -> Int
 inc step vol = min 100 $ (vol `div` step + 1) * step
