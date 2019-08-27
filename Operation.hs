@@ -2,6 +2,10 @@
 
 module Operation(Operation(..), op) where
 
+import qualified Data.Map as M
+import Data.Maybe (mapMaybe)
+import Data.List (nub)
+
 import Network.MPD
 import Network.MPD.Commands.Extensions
 
@@ -13,6 +17,7 @@ data Operation = Toggle
                | Previous
                | Next
                | AllRandom
+               | AlbumShuffle
 
 op :: Operation -> MPD ()
 op Toggle = toggle
@@ -24,6 +29,10 @@ op (VolumeDown volStep) = status >>= maybe (return ()) (setVolume . dec volStep)
 op Mute = setVolume 0
 op Previous = previous
 op Next = next
+op AlbumShuffle = clear >> consume True >> random False >> listPlaylistInfo "album-shuffle" >>= mapM_ findAdd . (queries . uniqAlbums) >> play Nothing
+  -- TODO shuffle the results of uniqAlbums
+  where uniqAlbums = nub . concat . mapMaybe (M.lookup Album . sgTags)
+        queries = map (Album =?)
 
 inc :: Int -> Int -> Int
 inc step vol = min 100 $ (vol `div` step + 1) * step
