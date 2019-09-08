@@ -1,0 +1,11 @@
+image: alpine/latest
+packages:
+  - ghc
+  - cabal
+sources:
+  - https://git.sr.ht/~pvsr/mpd-status
+tasks:
+  - build: |
+      cd mpd-status
+      cabal new-update
+      cabal new-build
