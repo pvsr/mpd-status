@@ -2,9 +2,8 @@
 
 module Operation(Operation(..), op) where
 
-import Control.Monad (when)
 import qualified Data.Map as M
-import Data.Maybe (fromJust, isJust, mapMaybe)
+import Data.Maybe (isJust, mapMaybe)
 import qualified Data.List as L (find, nub)
 
 import Control.Monad.Trans (liftIO)
@@ -50,18 +49,17 @@ albumShuffle songs = clear >> random False >> (liftIO . Shuffle.shuffle . querie
         queries = map (Album =?)
 
 nextAlbum :: MPD ()
-nextAlbum = let album = M.lookup Album . sgTags in do
+nextAlbum = let album = M.lookup Album . sgTags
+                whenJust m f = maybe (return ()) f m
+             in do
   st <- status
-  let position = stSongPos st
-  when (isJust position) $ do
-    let plLength = stPlaylistLength st
-    pl <- playlistInfoRange $ Just (fromJust position, fromInteger plLength)
-    -- TODO not safe
-    let current = head pl
-    let index = L.find (\song -> album song /= album current) pl >>= sgIndex
-    if isJust index
-       then play index
-       else next
+  let untilEnd pos = playlistInfoRange $ Just (pos, fromInteger $ stPlaylistLength st)
+  maybePl <- maybe (return Nothing) (fmap Just . untilEnd) $ stSongPos st
+  whenJust maybePl $ \pl -> do
+    -- since position was not Nothing, pl is guaranteed nonempty
+    let currentAlbum = album $ head pl
+    let index = L.find (\s -> album s /= currentAlbum) pl >>= sgIndex
+    if isJust index then play index else next
 
 inc :: Int -> Int -> Int
 inc step vol = min 100 $ (vol `div` step + 1) * step
