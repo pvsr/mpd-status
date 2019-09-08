@@ -1,11 +1,15 @@
-image: alpine/latest
+image: archlinux
 packages:
   - ghc
-  - cabal
+  - cabal-install
+  - haskell-libmpd
+  - haskell-aeson
+  - haskell-random
+  - haskell-text
 sources:
   - https://git.sr.ht/~pvsr/mpd-status
 tasks:
   - build: |
       cd mpd-status
-      cabal new-update
+      cabal new-configure --disable-library-vanilla --enable-shared --enable-executable-dynamic --ghc-options=-dynamic
       cabal new-build
