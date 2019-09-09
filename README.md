@@ -1,3 +1,4 @@
+[![builds.sr.ht status](https://builds.sr.ht/~pvsr/mpd-status.svg)](https://builds.sr.ht/~pvsr/mpd-status?)
 # `mpd-status`
 This is a block for [`i3blocks`](https://github.com/vivien/i3blocks) that can show
 and easily manipulate MPD's status.
