@@ -1,9 +1,9 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-module Config(buttonToOp, volStep) where
+module I3blocks.Config(buttonToOp, volStep) where
 
-import Click
 import Operation
+import I3blocks.Click
 
 import Network.MPD (PlaylistName(..))
 

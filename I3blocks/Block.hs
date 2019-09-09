@@ -13,8 +13,8 @@ import qualified Data.Text as T (Text, pack)
 import qualified Data.Text.IO as T (putStrLn)
 import Network.MPD
 
-import Config
 import Operation
+import I3blocks.Config
 
 main :: IO ()
 main = do

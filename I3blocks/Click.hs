@@ -1,7 +1,7 @@
 {-# LANGUAGE LambdaCase #-}
 {-# LANGUAGE OverloadedStrings #-}
 
-module Click (Button(..)) where
+module I3blocks.Click (Button(..)) where
 
 import Data.Aeson
 
