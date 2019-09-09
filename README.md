@@ -8,8 +8,8 @@ By default, left click plays and pauses, right click stops, the scroll wheel
 changes the volume, middle click shuffles all albums, and, if your mouse has
 them, the back button returns to the previous song and the forward button skips
 to the next album (this can be changed to go to the next song by editing
-`I3blocks/Config.hs` to have `buttonToOp Forward = Just Next` instead of `Just
-NextAlbum`).
+`I3blocks/ButtonMap.hs` and changing `buttonToOp = albumShuffleButtons` to
+`buttonToOp = defaultButtons`).
 
 ### Cool things about `mpd-status`
 * Automatically updates when the song or volume change, whether the change is
