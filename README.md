@@ -1,39 +1,46 @@
 [![builds.sr.ht status](https://builds.sr.ht/~pvsr/mpd-status.svg)](https://builds.sr.ht/~pvsr/mpd-status?)
 # `mpd-status`
-This is a block for [`i3blocks`](https://github.com/vivien/i3blocks) that can show
-and easily manipulate MPD's status.
-`mpd-status`'s main distinguishing feature over similar blocks is that it can
-both display song changes as they happen *and* control MPD's state.
-Now that
-[i3blocks#228](https://github.com/vivien/i3blocks/issues/228) is resolved,
-that's not actually very difficult,
-so others will probably have their own blocks that can do the same thing soon
-enough,
-but as far as I know this is the first!
+`mpd-status` is an interactive block for
+[`i3blocks`](https://github.com/vivien/i3blocks).
+It shows a brief description of the current song (e.g. "{Artist} - {Song}
+[paused | {vol}%]") and does various actions when clicked.
+By default, left click plays and pauses, right click stops, the scroll wheel
+changes the volume, middle click shuffles all albums, and, if your mouse has
+them, the back button returns to the previous song and the forward button skips
+to the next album (this can be changed to go to the next song by editing
+`I3blocks/Config.hs` to have `buttonToOp Forward = Just Next` instead of `Just
+NextAlbum`).
 
-### Cool things about mpd-status
-* Automatically updates when the song changes!
-* MPD actions can be expressed using
+### Cool things about `mpd-status`
+* Automatically updates when the song or volume change, whether the change is
+	triggered by a click action, an external command like `mpc`, or just the
+	current song ending. Most existing blocks are `mpc`-based scripts which
+	can't easily do this
+* MPD actions can be customized using
 	[`libmpd-haskell`](https://github.com/vimus/libmpd-haskell)'s DSL
-	* E.g. `clear >> add "" >> random True >> play Nothing` replaces the queue
-		with your library and shuffles it
-* Haskell
+	* E.g. `clear >> add "" >> random True >> play Nothing` replaces the current
+		queue with your library and shuffles it
+	* This also allows complex actions like shuffling by album and skipping the
+		beginning of the next album
+* Written in Haskell (ymmv)
+
 ### Not so cool things
-* Requires the latest master of i3blocks for now
-* Haskell
-	* Most i3blocks scripts are just that—scripts—and are easy to just download
-		and run. That's not exactly a strong suit of Haskell's, partially thanks to:
-	* So many dependencies
+* It's a multi-file binary, not a script. Technically you could interpret it
+	with `runhaskell`, but that's noticeably slow in my experience
+
+### Planned features
+* Customizable status format
+* Support for MPRIS players
+* Support for `mpv` (Maybe. It has an IPC server, but it's not especially
+	suitable for this)
 
 # Installation
-You'll need `cabal-install`.
+At some point I'll start distributing binaries,
+but for now you'll need `cabal-install`.
 ```bash
 $ git clone https://github.com/pvsr/mpd-status
 $ cd mpd-status
-$ cabal install
+$ cabal new-update
+$ cabal new-install mpd-status
 ```
-Then add `~/.cabal/bin/` to your `PATH`, et voilà.
-
-If you're on Arch Linux, then
-[good luck](https://wiki.archlinux.org/index.php/Haskell#Problems_with_linking).
-I'm an Arch user but I couldn't tell you how I got a working build.
+Then add `~/.cabal/bin/` to your `PATH`.
