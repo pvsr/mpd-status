@@ -1,33 +1,13 @@
 {-# LANGUAGE OverloadedStrings #-}
 
-import Control.Concurrent (forkIO, killThread)
-import Control.Monad (forever, (>=>))
+module I3blocks.Block (block) where
+
 import qualified Data.Map as M (lookup)
 import Data.Maybe (fromMaybe)
 import Data.Monoid ((<>))
-import System.IO (stdout, hSetBuffering, BufferMode(LineBuffering))
 
-import Data.Aeson (decodeStrict)
-import qualified Data.ByteString as B (getLine)
 import qualified Data.Text as T (Text, pack)
-import qualified Data.Text.IO as T (putStrLn)
 import Network.MPD
-
-import Operation
-import I3blocks.Config
-
-main :: IO ()
-main = do
-  hSetBuffering stdout LineBuffering
-  forever $ do
-    run block
-    tid <- forkIO . forever . run $ idle [PlayerS] >> block
-    b <- decodeStrict <$> B.getLine
-    killThread tid
-    withMPD . maybe (return ()) op $ b >>= buttonToOp
-
-run :: MPD T.Text -> IO ()
-run = withMPD >=> either print T.putStrLn
 
 -- TODO color
 -- colors set in i3blocks config are available in environment

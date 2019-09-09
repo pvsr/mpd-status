@@ -21,8 +21,9 @@ executable mpd-status
   default-extensions:  OverloadedStrings
   other-extensions:    LambdaCase
   ghc-options:         -Wall
-  main-is:             I3blocks/Block.hs
-  other-modules:       I3blocks.Click
+  main-is:             I3blocks/Main.hs
+  other-modules:       I3blocks.Block
+                       I3blocks.Click
                        I3blocks.Config
                        Operation
                        Shuffle
