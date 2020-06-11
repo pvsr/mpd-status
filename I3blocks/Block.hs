@@ -8,7 +8,6 @@ where
 import qualified Data.Map                      as M
                                                 ( lookup )
 import           Data.Maybe                     ( fromMaybe )
-import           Data.Semigroup                 ( (<>) )
 
 import qualified Data.Text                     as T
                                                 ( Text
