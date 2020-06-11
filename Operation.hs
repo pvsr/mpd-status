@@ -82,11 +82,11 @@ nextAlbum =
           if isJust index then play index else next
 
 inc :: Int -> Volume -> Volume
-inc intStep vol = min 100 $ (vol `div` step + 1) * step
+inc intStep vol = min 100 $ (vol `quot` step + 1) * step
   where step = fromIntegral intStep
 
 dec :: Int -> Volume -> Volume
 dec intStep vol = max 0 $ steppedQuotient * step
   where step = fromIntegral intStep
-        (q, r) = vol `divMod` step
+        (q, r) = vol `quotRem` step
         steppedQuotient = if r == 0 then q - 1 else q
