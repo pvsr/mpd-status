@@ -34,7 +34,7 @@ executable mpd-status
                      , aeson >=1.4 && <1.5
                      , bytestring >=0.10 && <0.11
                      , containers >=0.5 && <0.7
-                     , libmpd >=0.9 && <0.10
+                     , libmpd >=0.9.1 && <0.10
                      , mtl >2.2.0 && <2.3.0
                      , random >=1.1 && <1.2
                      , text >=1.2 && <1.3

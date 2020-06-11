@@ -81,9 +81,12 @@ nextAlbum =
           let index = L.find (\s -> album s /= currentAlbum) pl >>= sgIndex
           if isJust index then play index else next
 
-inc :: Int -> Int -> Int
-inc step vol = min 100 $ (vol `div` step + 1) * step
+inc :: Int -> Volume -> Volume
+inc intStep vol = min 100 $ (vol `div` step + 1) * step
+  where step = fromIntegral intStep
 
-dec :: Int -> Int -> Int
-dec step vol = max 0 (baseN `div` step) * step
-  where baseN = if vol `mod` step == 0 then vol - 1 else vol
+dec :: Int -> Volume -> Volume
+dec intStep vol = max 0 $ steppedQuotient * step
+  where step = fromIntegral intStep
+        (q, r) = vol `divMod` step
+        steppedQuotient = if r == 0 then q - 1 else q
